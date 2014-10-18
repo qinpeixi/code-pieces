@@ -5,6 +5,7 @@
 #include <sstream>
 #include <cstdlib>
 #include <cassert>
+#include <stdexcept>
 
 class Foo {
 public:
@@ -51,7 +52,7 @@ private:
 
 template< class ValueType,
           class ContainerType,
-          const ValueType& max_value,
+          const ValueType& forever_lose_value,
           class Compare = std::less<ValueType> >
 class LoserTree
 {
@@ -60,11 +61,17 @@ public:
         _num(num), _ways(ways), _indexes(new size_t[_num]),
         _data(new ValueType[_num]), _losers(new int[_num])
     {
+        if (ways == NULL || num == 0) {
+            delete[] _indexes;
+            delete[] _data;
+            delete[] _losers;
+            throw std::invalid_argument("invalid ways or number of ways");
+        }
         std::fill(_indexes, _indexes + _num, 0);
         std::fill(_losers, _losers + _num, -1);
         for (int way_idx = _num-1; way_idx >= 0; --way_idx) {
             if (_indexes[way_idx] == _ways[way_idx].size()) {
-                _data[way_idx] = max_value;
+                _data[way_idx] = forever_lose_value;
             } else {
                 _data[way_idx] = _ways[way_idx][_indexes[way_idx]];
             }
@@ -80,11 +87,11 @@ public:
 
     bool extract_one(ValueType& v) {
         int way_idx = _losers[0];
-        if (_data[way_idx] == max_value)
+        if (_data[way_idx] == forever_lose_value)
             return false;
         v = _data[way_idx];
         if (++_indexes[way_idx] == _ways[way_idx].size()) {
-            _data[way_idx] = max_value;
+            _data[way_idx] = forever_lose_value;
         } else {
             _data[way_idx] = _ways[way_idx][_indexes[way_idx]];
         }
@@ -192,8 +199,13 @@ void test()
 
 int main()
 {
-    test_foo();
-    test();
+    try {
+        //LoserTree<int, std::vector<int>, int_max> lt(NULL, 3);
+        test_foo();
+        test();
+    } catch (const std::exception& exc){
+        std::cerr << exc.what() << std::endl;
+    }
 
     return 0;
 }
